@@ -10,38 +10,34 @@ import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.produce
 import kotlinx.coroutines.runBlocking
 
-private fun log(msg: String) {
+@OptIn(ExperimentalCoroutinesApi::class)
+fun CoroutineScope.numbers(start: Int) = produce<Int> {
+    var i = start
+    while (true) send(i++)
+}
+
+@OptIn(ExperimentalCoroutinesApi::class)
+fun CoroutineScope.filter(numbers: ReceiveChannel<Int>, prime: Int) = produce<Int> {
+    for (x in numbers) {
+        if (x % prime != 0) {
+            send(x)
+        }
+    }
+}
+
+fun log(msg: String) {
     println("[${Thread.currentThread().name}] $msg")
 }
 
-@OptIn(ExperimentalCoroutinesApi::class)
-fun CoroutineScope.productNumbers(): ReceiveChannel<Int> = produce {
-    var i = 1
-    while (true) {
-        send(i++)
-    }
-}
-
-@OptIn(ExperimentalCoroutinesApi::class)
-fun CoroutineScope.squares(incoming: ReceiveChannel<Int>): ReceiveChannel<Int> = produce {
-    for (i in incoming) {
-        send(i * i)
-    }
-    close()
-}
-
 fun main() {
-    log("main starting")
-
     runBlocking {
-        val numbers = productNumbers()
-        val squares = squares(numbers)
-        repeat(5) {
-            log("receiving ${squares.receive()}")
+        var n = numbers(2)
+        repeat(10) {
+            val i = n.receive()
+            log("received: $i")
+            n = filter(n, i)
+
         }
-        log("Done!")
         coroutineContext.cancelChildren()
     }
-
-    log("main ending")
 }
