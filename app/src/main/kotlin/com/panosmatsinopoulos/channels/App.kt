@@ -3,13 +3,31 @@
  */
 package com.panosmatsinopoulos.channels
 
-class App {
-    val greeting: String
-        get() {
-            return "Hello World!"
-        }
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+
+private fun log(msg: String) {
+    println("[${Thread.currentThread().name}] $msg")
 }
 
 fun main() {
-    println(App().greeting)
+    log("main staring")
+
+    val channel = Channel<Int>()
+    runBlocking {
+        launch {
+            // this might be heavy CPU-consuming computation or async logic
+            for (x in 1..5) {
+                log("sending: ${x * x}")
+                channel.send(x * x)
+            }
+        }
+        repeat(5) {
+            log("receiving: ${channel.receive()}")
+        }
+        log("Done!")
+    }
+
+    log("main ending")
 }
