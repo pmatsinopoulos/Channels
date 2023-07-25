@@ -3,25 +3,22 @@
  */
 package com.panosmatsinopoulos.channels
 
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.cancelChildren
+import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.produce
-import kotlinx.coroutines.runBlocking
 
 @OptIn(ExperimentalCoroutinesApi::class)
-fun CoroutineScope.numbers(start: Int) = produce<Int> {
-    var i = start
-    while (true) send(i++)
+fun CoroutineScope.productNumbers() = produce<Int> {
+    var x = 1
+    while (true) {
+        send(x++)
+        delay(100)
+    }
 }
 
-@OptIn(ExperimentalCoroutinesApi::class)
-fun CoroutineScope.filter(numbers: ReceiveChannel<Int>, prime: Int) = produce<Int> {
-    for (x in numbers) {
-        if (x % prime != 0) {
-            send(x)
-        }
+fun CoroutineScope.launchProcessor(id: Int, channel: ReceiveChannel<Int>) = launch {
+    for (msg in channel) {
+        log("processor #$id received $msg")
     }
 }
 
@@ -31,13 +28,9 @@ fun log(msg: String) {
 
 fun main() {
     runBlocking {
-        var n = numbers(2)
-        repeat(10) {
-            val i = n.receive()
-            log("received: $i")
-            n = filter(n, i)
-
-        }
-        coroutineContext.cancelChildren()
+        val producer = productNumbers()
+        repeat(5) { launchProcessor(it, producer) }
+        delay(1110)
+        producer.cancel()
     }
 }
