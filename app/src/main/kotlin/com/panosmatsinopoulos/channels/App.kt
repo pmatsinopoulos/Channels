@@ -3,7 +3,6 @@
  */
 package com.panosmatsinopoulos.channels
 
-import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.delay
@@ -22,13 +21,15 @@ fun log(msg: String) {
 }
 
 fun main() {
-    val channel = Channel<String>()
+    val channel = Channel<Int>(4) // create a buffered channel
     runBlocking {
-        launch { sendString(channel, "foo", 200L) }
-        launch { sendString(channel, "BAR!", 500L) }
-        repeat(6) {
-            log("Received: ${channel.receive()}")
+        val sender = launch {
+            repeat(10) {
+                log("sending $it")
+                channel.send(it)
+            }
         }
-        coroutineContext.cancelChildren()
+        delay(1_000)
+        sender.cancel()
     }
 }
