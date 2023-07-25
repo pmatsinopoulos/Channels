@@ -3,31 +3,28 @@
  */
 package com.panosmatsinopoulos.channels
 
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.channels.ReceiveChannel
+import kotlinx.coroutines.channels.consumeEach
+import kotlinx.coroutines.channels.produce
 import kotlinx.coroutines.runBlocking
 
 private fun log(msg: String) {
     println("[${Thread.currentThread().name}] $msg")
 }
 
+@OptIn(ExperimentalCoroutinesApi::class)
+fun CoroutineScope.produceSquares(): ReceiveChannel<Int> = produce {
+    for (x in 1..5) send(x * x)
+}
+
 fun main() {
     log("main staring")
 
-    val channel = Channel<Int>()
     runBlocking {
-        launch {
-            // this might be heavy CPU-consuming computation or async logic
-            for (x in 1..5) {
-                log("sending: ${x * x}")
-                channel.send(x * x)
-            }
-            channel.close() // we are done sending
-        }
-        // repeat until closed
-        for (i in channel) {
-            log("receiving: $i")
-        }
+        val squares = produceSquares()
+        squares.consumeEach { log("receiving: $it") }
         log("Done!")
     }
 
