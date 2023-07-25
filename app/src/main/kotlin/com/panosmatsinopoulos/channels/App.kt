@@ -5,8 +5,8 @@ package com.panosmatsinopoulos.channels
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.channels.ReceiveChannel
-import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.channels.produce
 import kotlinx.coroutines.runBlocking
 
@@ -15,17 +15,32 @@ private fun log(msg: String) {
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
-fun CoroutineScope.produceSquares(): ReceiveChannel<Int> = produce {
-    for (x in 1..5) send(x * x)
+fun CoroutineScope.productNumbers(): ReceiveChannel<Int> = produce {
+    var i = 1
+    while (true) {
+        send(i++)
+    }
+}
+
+@OptIn(ExperimentalCoroutinesApi::class)
+fun CoroutineScope.squares(incoming: ReceiveChannel<Int>): ReceiveChannel<Int> = produce {
+    for (i in incoming) {
+        send(i * i)
+    }
+    close()
 }
 
 fun main() {
-    log("main staring")
+    log("main starting")
 
     runBlocking {
-        val squares = produceSquares()
-        squares.consumeEach { log("receiving: $it") }
+        val numbers = productNumbers()
+        val squares = squares(numbers)
+        repeat(5) {
+            log("receiving ${squares.receive()}")
+        }
         log("Done!")
+        coroutineContext.cancelChildren()
     }
 
     log("main ending")
