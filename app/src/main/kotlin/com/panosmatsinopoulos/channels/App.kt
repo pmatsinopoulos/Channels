@@ -22,9 +22,11 @@ fun main() {
                 log("sending: ${x * x}")
                 channel.send(x * x)
             }
+            channel.close() // we are done sending
         }
-        repeat(5) {
-            log("receiving: ${channel.receive()}")
+        // repeat until closed
+        for (i in channel) {
+            log("receiving: $i")
         }
         log("Done!")
     }
